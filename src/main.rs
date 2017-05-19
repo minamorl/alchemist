@@ -18,7 +18,7 @@ impl KeyValue {
         let value_as_bytes = self.value.as_bytes().to_vec();
         vec![key_as_bytes, vec![SEPARATOR_KEY_VALUE], value_as_bytes].concat()
     }
-    pub fn deserialize(bytes: Vec<u8>) -> Self {
+    pub fn deserialize(bytes: Vec<u8>) -> Option<Self> {
         let mut after_separator = false;
         let mut key_bytes: Vec<u8> = vec![];
         let mut value_bytes: Vec<u8> = vec![];
@@ -34,17 +34,24 @@ impl KeyValue {
                 key_bytes.push(x)
             }
         }
-        KeyValue {
-            key: String::from_utf8(key_bytes).unwrap(),
-            value: String::from_utf8(value_bytes).unwrap(),
-        }
+        let key = String::from_utf8(key_bytes);
+        let value = String::from_utf8(value_bytes);
+        if let Ok(key) = key {
+            if let Ok(value) = value {
+                return Some(KeyValue {
+                    key: key,
+                    value: value,
+                })
+            }
+        };
+        None
     }
 }
 
 fn main() {
     let kv = KeyValue::new("key", "value");
     let serialized = kv.serialize();
-    let deserialized = KeyValue::deserialize(serialized);
+    let deserialized = KeyValue::deserialize(serialized).unwrap();
     assert_eq!(deserialized.key, "key");
     assert_eq!(deserialized.value, "value");
 }
