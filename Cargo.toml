@@ -1,0 +1,6 @@
+[package]
+name = "alchemist"
+version = "0.1.0"
+authors = ["minamorl <minamorl@minamorl.com>"]
+
+[dependencies]
