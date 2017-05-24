@@ -1,7 +1,5 @@
 use std::fmt;
 
-const SEPARATOR_KEY_VALUE: u8 = 1;
-
 #[derive(Debug)]
 enum AlchemistError {
     DeserializationFailed,
@@ -22,6 +20,11 @@ struct KeyValue {
     value: String,
 }
 
+#[derive(Debug)]
+struct KeyValueSerializeOption {
+    separator_key_value: u8,
+}
+
 impl KeyValue {
     pub fn new(key: &str, value: &str) -> KeyValue {
         KeyValue {
@@ -29,18 +32,18 @@ impl KeyValue {
             value: value.to_string(),
         }
     }
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self, options: &KeyValueSerializeOption) -> Vec<u8> {
         let key_as_bytes = self.key.as_bytes().to_vec();
         let value_as_bytes = self.value.as_bytes().to_vec();
-        vec![key_as_bytes, vec![SEPARATOR_KEY_VALUE], value_as_bytes].concat()
+        vec![key_as_bytes, vec![options.separator_key_value], value_as_bytes].concat()
     }
-    pub fn deserialize(bytes: Vec<u8>) -> Result<Self, AlchemistError> {
+    pub fn deserialize(bytes: Vec<u8>, options: &KeyValueSerializeOption) -> Result<Self, AlchemistError> {
         let mut after_separator = false;
         let mut key_bytes: Vec<u8> = vec![];
         let mut value_bytes: Vec<u8> = vec![];
-        // Separate key and values by SEPARATOR_KEY_VALUE
+        // Separate key and values by options.separator_key_value
         for x in bytes {
-            if x == SEPARATOR_KEY_VALUE {
+            if x == options.separator_key_value {
                 after_separator = true;
                 continue;
             }
@@ -66,8 +69,11 @@ impl KeyValue {
 
 fn main() {
     let kv = KeyValue::new("key", "value");
-    let serialized = kv.serialize();
-    let deserialized = KeyValue::deserialize(serialized).unwrap();
+    let options = KeyValueSerializeOption {
+        separator_key_value: 1,
+    };
+    let serialized = kv.serialize(&options);
+    let deserialized = KeyValue::deserialize(serialized, &options).unwrap();
     assert_eq!(deserialized.key, "key");
     assert_eq!(deserialized.value, "value");
 }
