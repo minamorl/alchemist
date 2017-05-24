@@ -1,3 +1,7 @@
+extern crate byteorder;
+
+use std::io::Cursor;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::fmt;
 
 #[derive(Debug)]
@@ -20,9 +24,15 @@ struct KeyValue {
     value: String,
 }
 
-#[derive(Debug)]
-struct KeyValueSerializeOption {
-    separator_key_value: u8,
+fn u32tobytes(v: u32) -> Vec<u8> {
+    let mut wtr = vec![];
+    wtr.write_u32::<BigEndian>(v).unwrap();
+    wtr
+}
+
+fn bytestou32(v: &[u8]) -> u32 {
+    let mut rdr = Cursor::new(v);
+    rdr.read_u32::<BigEndian>().unwrap()
 }
 
 impl KeyValue {
@@ -32,48 +42,32 @@ impl KeyValue {
             value: value.to_string(),
         }
     }
-    fn serialize(&self, options: &KeyValueSerializeOption) -> Vec<u8> {
+    fn serialize(&self) -> Vec<u8> {
         let key_as_bytes = self.key.as_bytes().to_vec();
         let value_as_bytes = self.value.as_bytes().to_vec();
-        vec![key_as_bytes, vec![options.separator_key_value], value_as_bytes].concat()
+        vec![
+            u32tobytes(key_as_bytes.len() as u32).to_vec(),
+            u32tobytes(value_as_bytes.len() as u32).to_vec(),
+            key_as_bytes,
+            value_as_bytes,
+        ].concat()
     }
-    pub fn deserialize(bytes: Vec<u8>, options: &KeyValueSerializeOption) -> Result<Self, AlchemistError> {
-        let mut after_separator = false;
-        let mut key_bytes: Vec<u8> = vec![];
-        let mut value_bytes: Vec<u8> = vec![];
-        // Separate key and values by options.separator_key_value
-        for x in bytes {
-            if x == options.separator_key_value {
-                after_separator = true;
-                continue;
-            }
-            if after_separator {
-                value_bytes.push(x)
-            } else {
-                key_bytes.push(x)
+    pub fn deserialize(bytes: &[u8]) -> Result<Self, AlchemistError> {
+        let key_length = bytestou32(&bytes[0..4]) as usize;
+        let value_length = bytestou32(&bytes[4..8]) as usize;
+        if let Ok(key) = String::from_utf8(bytes[8 .. 8 + key_length].to_vec()) {
+            if let Ok(value) = String::from_utf8(bytes[8 + key_length .. 8 + key_length + value_length].to_vec()) {
+                return Ok(Self::new(&key, &value))
             }
         }
-        let key = String::from_utf8(key_bytes);
-        let value = String::from_utf8(value_bytes);
-        if let Ok(key) = key {
-            if let Ok(value) = value {
-                return Ok(KeyValue {
-                    key: key,
-                    value: value
-                })
-            }
-        };
         Err(AlchemistError::DeserializationFailed)
     }
 }
 
 fn main() {
-    let kv = KeyValue::new("key", "value");
-    let options = KeyValueSerializeOption {
-        separator_key_value: 1,
-    };
-    let serialized = kv.serialize(&options);
-    let deserialized = KeyValue::deserialize(serialized, &options).unwrap();
-    assert_eq!(deserialized.key, "key");
-    assert_eq!(deserialized.value, "value");
+    let kv = KeyValue::new("キー", "ヴァリュー");
+    let serialized = kv.serialize();
+    let deserialized = KeyValue::deserialize(&serialized).unwrap();
+    assert_eq!(deserialized.key, "キー");
+    assert_eq!(deserialized.value, "ヴァリュー");
 }
