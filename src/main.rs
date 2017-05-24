@@ -13,7 +13,7 @@ impl KeyValue {
             value: value.to_string(),
         }
     }
-    fn serialize(self) -> Vec<u8> {
+    fn serialize(&self) -> Vec<u8> {
         let key_as_bytes = self.key.as_bytes().to_vec();
         let value_as_bytes = self.value.as_bytes().to_vec();
         vec![key_as_bytes, vec![SEPARATOR_KEY_VALUE], value_as_bytes].concat()
@@ -40,7 +40,7 @@ impl KeyValue {
             if let Ok(value) = value {
                 return Some(KeyValue {
                     key: key,
-                    value: value,
+                    value: value
                 })
             }
         };
