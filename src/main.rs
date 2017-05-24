@@ -1,4 +1,20 @@
+use std::fmt;
+
 const SEPARATOR_KEY_VALUE: u8 = 1;
+
+#[derive(Debug)]
+enum AlchemistError {
+    DeserializationFailed,
+}
+
+impl fmt::Display for AlchemistError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            AlchemistError::DeserializationFailed =>
+                write!(f, "deserialization was failed"),
+        }
+    }
+}
 
 #[derive(Debug)]
 struct KeyValue {
@@ -18,7 +34,7 @@ impl KeyValue {
         let value_as_bytes = self.value.as_bytes().to_vec();
         vec![key_as_bytes, vec![SEPARATOR_KEY_VALUE], value_as_bytes].concat()
     }
-    pub fn deserialize(bytes: Vec<u8>) -> Option<Self> {
+    pub fn deserialize(bytes: Vec<u8>) -> Result<Self, AlchemistError> {
         let mut after_separator = false;
         let mut key_bytes: Vec<u8> = vec![];
         let mut value_bytes: Vec<u8> = vec![];
@@ -38,13 +54,13 @@ impl KeyValue {
         let value = String::from_utf8(value_bytes);
         if let Ok(key) = key {
             if let Ok(value) = value {
-                return Some(KeyValue {
+                return Ok(KeyValue {
                     key: key,
                     value: value
                 })
             }
         };
-        None
+        Err(AlchemistError::DeserializationFailed)
     }
 }
 
