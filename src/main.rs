@@ -6,6 +6,8 @@ use std::io::Cursor;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::fmt;
 
+const KEYVALUE_LENGTH_BYTE: usize = 4;
+
 #[derive(Debug)]
 enum AlchemistError {
     DeserializationFailed,
@@ -55,11 +57,11 @@ impl KeyValue {
         ].concat()
     }
     pub fn deserialize(bytes: &[u8]) -> Result<Self, AlchemistError> {
-        let key_length = bytestou32(&bytes[0..4]) as usize;
-        let value_length = bytestou32(&bytes[4..8]) as usize;
-        let key = String::from_utf8(bytes[8 .. 8 + key_length].to_vec())
+        let key_length = bytestou32(&bytes[0..KEYVALUE_LENGTH_BYTE]) as usize;
+        let value_length = bytestou32(&bytes[KEYVALUE_LENGTH_BYTE..KEYVALUE_LENGTH_BYTE * 2]) as usize;
+        let key = String::from_utf8(bytes[KEYVALUE_LENGTH_BYTE * 2 .. KEYVALUE_LENGTH_BYTE * 2 + key_length].to_vec())
             .map_err(|_| AlchemistError::DeserializationFailed)?;
-        let value = String::from_utf8(bytes[8 + key_length .. 8 + key_length + value_length].to_vec())
+        let value = String::from_utf8(bytes[KEYVALUE_LENGTH_BYTE * 2 + key_length .. KEYVALUE_LENGTH_BYTE * 2 + key_length + value_length].to_vec())
             .map_err(|_| AlchemistError::DeserializationFailed)?;
         Ok(Self::new(&key, &value))
     }
