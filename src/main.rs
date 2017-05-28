@@ -1,3 +1,5 @@
+#[macro_use] extern crate log;
+extern crate env_logger;
 extern crate byteorder;
 
 use std::io::Cursor;
@@ -55,19 +57,23 @@ impl KeyValue {
     pub fn deserialize(bytes: &[u8]) -> Result<Self, AlchemistError> {
         let key_length = bytestou32(&bytes[0..4]) as usize;
         let value_length = bytestou32(&bytes[4..8]) as usize;
-        if let Ok(key) = String::from_utf8(bytes[8 .. 8 + key_length].to_vec()) {
-            if let Ok(value) = String::from_utf8(bytes[8 + key_length .. 8 + key_length + value_length].to_vec()) {
-                return Ok(Self::new(&key, &value))
-            }
-        }
-        Err(AlchemistError::DeserializationFailed)
+        let key = String::from_utf8(bytes[8 .. 8 + key_length].to_vec())
+            .map_err(|_| AlchemistError::DeserializationFailed)?;
+	let value = String::from_utf8(bytes[8 + key_length .. 8 + key_length + value_length].to_vec())
+	    .map_err(|_| AlchemistError::DeserializationFailed)?;
+	Ok(Self::new(&key, &value))
     }
 }
 
 fn main() {
+    env_logger::init().unwrap();
+
+    info!("Create KeyValue instance");
     let kv = KeyValue::new("キー", "ヴァリュー");
     let serialized = kv.serialize();
     let deserialized = KeyValue::deserialize(&serialized).unwrap();
+    info!("Assertion with deserialized.key");
     assert_eq!(deserialized.key, "キー");
+    info!("Assertion with deserialized.value");
     assert_eq!(deserialized.value, "ヴァリュー");
 }
