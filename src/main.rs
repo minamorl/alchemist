@@ -60,8 +60,8 @@ impl KeyValue {
         ].concat())
     }
     pub fn deserialize(bytes: &[u8]) -> Result<Self, AlchemistError> {
-        let key_length = bytestou32(&bytes[0..KEYVALUE_LENGTH_BYTE]).unwrap() as usize;
-        let value_length = bytestou32(&bytes[KEYVALUE_LENGTH_BYTE..KEYVALUE_LENGTH_BYTE * 2]).unwrap() as usize;
+        let key_length = bytestou32(&bytes[0..KEYVALUE_LENGTH_BYTE])? as usize;
+        let value_length = bytestou32(&bytes[KEYVALUE_LENGTH_BYTE..KEYVALUE_LENGTH_BYTE * 2])? as usize;
         let key = String::from_utf8(bytes[KEYVALUE_LENGTH_BYTE * 2 .. KEYVALUE_LENGTH_BYTE * 2 + key_length].to_vec())
             .map_err(|_| AlchemistError::DeserializationFailed)?;
         let value = String::from_utf8(bytes[KEYVALUE_LENGTH_BYTE * 2 + key_length .. KEYVALUE_LENGTH_BYTE * 2 + key_length + value_length].to_vec())
