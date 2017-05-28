@@ -59,9 +59,9 @@ impl KeyValue {
         let value_length = bytestou32(&bytes[4..8]) as usize;
         let key = String::from_utf8(bytes[8 .. 8 + key_length].to_vec())
             .map_err(|_| AlchemistError::DeserializationFailed)?;
-	let value = String::from_utf8(bytes[8 + key_length .. 8 + key_length + value_length].to_vec())
-	    .map_err(|_| AlchemistError::DeserializationFailed)?;
-	Ok(Self::new(&key, &value))
+        let value = String::from_utf8(bytes[8 + key_length .. 8 + key_length + value_length].to_vec())
+            .map_err(|_| AlchemistError::DeserializationFailed)?;
+        Ok(Self::new(&key, &value))
     }
 }
 
