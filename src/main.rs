@@ -46,15 +46,18 @@ impl KeyValue {
             value: value.to_string(),
         }
     }
-    fn serialize(&self) -> Vec<u8> {
+    fn serialize(&self) -> Result<Vec<u8>, AlchemistError> {
         let key_as_bytes = self.key.as_bytes().to_vec();
         let value_as_bytes = self.value.as_bytes().to_vec();
-        vec![
-            u32tobytes(key_as_bytes.len() as u32).unwrap().to_vec(),
-            u32tobytes(value_as_bytes.len() as u32).unwrap().to_vec(),
+        let key_length_as_bytes = u32tobytes(key_as_bytes.len() as u32)?.to_vec();
+        let value_length_as_bytes = u32tobytes(value_as_bytes.len() as u32)?.to_vec();
+
+        Ok(vec![
+            key_length_as_bytes,
+            value_length_as_bytes,
             key_as_bytes,
             value_as_bytes,
-        ].concat()
+        ].concat())
     }
     pub fn deserialize(bytes: &[u8]) -> Result<Self, AlchemistError> {
         let key_length = bytestou32(&bytes[0..KEYVALUE_LENGTH_BYTE]).unwrap() as usize;
@@ -72,7 +75,7 @@ fn main() {
 
     info!("Create KeyValue instance");
     let kv = KeyValue::new("キー", "ヴァリュー");
-    let serialized = kv.serialize();
+    let serialized = kv.serialize().unwrap();
     let deserialized = KeyValue::deserialize(&serialized).unwrap();
     info!("Assertion with deserialized.key");
     assert_eq!(deserialized.key, "キー");
