@@ -28,15 +28,15 @@ struct KeyValue {
     value: String,
 }
 
-fn u32tobytes(v: u32) -> Vec<u8> {
+fn u32tobytes(v: u32) -> Result<Vec<u8>, AlchemistError> {
     let mut wtr = vec![];
-    wtr.write_u32::<BigEndian>(v).unwrap();
-    wtr
+    wtr.write_u32::<BigEndian>(v).map_err(|_| AlchemistError::DeserializationFailed)?;
+    Ok(wtr)
 }
 
-fn bytestou32(v: &[u8]) -> u32 {
+fn bytestou32(v: &[u8]) -> Result<u32, AlchemistError> {
     let mut rdr = Cursor::new(v);
-    rdr.read_u32::<BigEndian>().unwrap()
+    rdr.read_u32::<BigEndian>().map_err(|_| AlchemistError::DeserializationFailed)
 }
 
 impl KeyValue {
@@ -50,15 +50,15 @@ impl KeyValue {
         let key_as_bytes = self.key.as_bytes().to_vec();
         let value_as_bytes = self.value.as_bytes().to_vec();
         vec![
-            u32tobytes(key_as_bytes.len() as u32).to_vec(),
-            u32tobytes(value_as_bytes.len() as u32).to_vec(),
+            u32tobytes(key_as_bytes.len() as u32).unwrap().to_vec(),
+            u32tobytes(value_as_bytes.len() as u32).unwrap().to_vec(),
             key_as_bytes,
             value_as_bytes,
         ].concat()
     }
     pub fn deserialize(bytes: &[u8]) -> Result<Self, AlchemistError> {
-        let key_length = bytestou32(&bytes[0..KEYVALUE_LENGTH_BYTE]) as usize;
-        let value_length = bytestou32(&bytes[KEYVALUE_LENGTH_BYTE..KEYVALUE_LENGTH_BYTE * 2]) as usize;
+        let key_length = bytestou32(&bytes[0..KEYVALUE_LENGTH_BYTE]).unwrap() as usize;
+        let value_length = bytestou32(&bytes[KEYVALUE_LENGTH_BYTE..KEYVALUE_LENGTH_BYTE * 2]).unwrap() as usize;
         let key = String::from_utf8(bytes[KEYVALUE_LENGTH_BYTE * 2 .. KEYVALUE_LENGTH_BYTE * 2 + key_length].to_vec())
             .map_err(|_| AlchemistError::DeserializationFailed)?;
         let value = String::from_utf8(bytes[KEYVALUE_LENGTH_BYTE * 2 + key_length .. KEYVALUE_LENGTH_BYTE * 2 + key_length + value_length].to_vec())
