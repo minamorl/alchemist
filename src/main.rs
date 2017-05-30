@@ -5,6 +5,8 @@ extern crate byteorder;
 use std::io::Cursor;
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::fmt;
+use std::net::{TcpListener, TcpStream};
+use std::io::Write;
 
 const KEYVALUE_LENGTH_BYTE: usize = 4;
 
@@ -40,8 +42,8 @@ fn bytestou32(v: &[u8]) -> Result<u32, AlchemistError> {
 }
 
 impl KeyValue {
-    pub fn new(key: &str, value: &str) -> KeyValue {
-        KeyValue {
+    pub fn new(key: &str, value: &str) -> Self {
+        Self {
             key: key.to_string(),
             value: value.to_string(),
         }
@@ -70,6 +72,28 @@ impl KeyValue {
     }
 }
 
+#[derive(Debug)]
+struct Server {
+    listener: TcpListener,
+}
+
+impl Server {
+    pub fn create(listener: TcpListener) -> Self {
+        for stream in listener.incoming() {
+            match stream {
+                Ok(mut stream) => {
+                    info!("Received new connection");
+                    stream.write("Hello world".as_bytes());
+                }
+                Err(e) => { /* connection failed */ }
+            }
+        };
+        Self {
+            listener: listener,
+        }
+    }
+}
+
 fn main() {
     env_logger::init().unwrap();
 
@@ -81,4 +105,7 @@ fn main() {
     assert_eq!(deserialized.key, "キー");
     info!("Assertion with deserialized.value");
     assert_eq!(deserialized.value, "ヴァリュー");
+
+    let server = Server::create(TcpListener::bind("127.0.0.1:8080").unwrap());
+    let listner = server.listener;
 }
