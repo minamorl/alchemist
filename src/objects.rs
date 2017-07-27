@@ -1,5 +1,6 @@
 use utils::{u32tobytes, bytestou32};
 use error::AlchemistError;
+use traits::{Serializable, Deserializable};
 
 const KEYVALUE_LENGTH_BYTE: usize = 4;
 
@@ -16,8 +17,10 @@ impl KeyValue {
             value: value.to_string(),
         }
     }
+}
 
-    pub fn serialize(&self) -> Result<Vec<u8>, AlchemistError> {
+impl Serializable for KeyValue {
+    fn serialize(&self) -> Result<Vec<u8>, AlchemistError> {
         let key_as_bytes = self.key.as_bytes().to_vec();
         let value_as_bytes = self.value.as_bytes().to_vec();
         let key_length_as_bytes = u32tobytes(key_as_bytes.len() as u32)?.to_vec();
@@ -29,18 +32,21 @@ impl KeyValue {
                 value_as_bytes]
                     .concat())
     }
-    pub fn deserialize(bytes: &[u8]) -> Result<Self, AlchemistError> {
-        let key_length = bytestou32(&bytes[0..KEYVALUE_LENGTH_BYTE])? as usize;
-        let value_length = bytestou32(&bytes[KEYVALUE_LENGTH_BYTE..KEYVALUE_LENGTH_BYTE * 2])? as
+}
+
+impl Deserializable<KeyValue> for Vec<u8> {
+    fn deserialize(&self) -> Result<KeyValue, AlchemistError> {
+        let key_length = bytestou32(&self[0..KEYVALUE_LENGTH_BYTE])? as usize;
+        let value_length = bytestou32(&self[KEYVALUE_LENGTH_BYTE..KEYVALUE_LENGTH_BYTE * 2])? as
                             usize;
-        let key = String::from_utf8(bytes[KEYVALUE_LENGTH_BYTE * 2..
+        let key = String::from_utf8(self[KEYVALUE_LENGTH_BYTE * 2..
                                     KEYVALUE_LENGTH_BYTE * 2 + key_length]
                                             .to_vec())
                 .map_err(|_| AlchemistError::DeserializationFailed)?;
-        let value = String::from_utf8(bytes[KEYVALUE_LENGTH_BYTE * 2 + key_length..
+        let value = String::from_utf8(self[KEYVALUE_LENGTH_BYTE * 2 + key_length..
                                         KEYVALUE_LENGTH_BYTE * 2 + key_length + value_length]
                                                 .to_vec())
                 .map_err(|_| AlchemistError::DeserializationFailed)?;
-        Ok(Self::new(&key, &value))
+        Ok(KeyValue::new(&key, &value))
     }
 }
