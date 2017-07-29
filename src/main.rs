@@ -8,18 +8,21 @@ mod utils;
 mod error;
 mod traits;
 
-use objects::{KeyValue};
+use objects::{KeyValue, PrimitiveType};
 use traits::{Serializable, Deserializable};
 
 fn main() {
     env_logger::init().unwrap();
 
     info!("Create KeyValue instance");
-    let kv = KeyValue::new("キー", "ヴァリュー");
+    let kv = KeyValue::new("キー", PrimitiveType::Str("ヴァリュー".to_string()));
     let serialized = kv.serialize().unwrap();
     let deserialized = serialized.deserialize().unwrap();
+       
     info!("Assertion with deserialized.key");
     assert_eq!(deserialized.key, "キー");
     info!("Assertion with deserialized.value");
-    assert_eq!(deserialized.value, "ヴァリュー");
+    match deserialized.value {
+        PrimitiveType::Str(x) => assert_eq!(x, "ヴァリュー")
+    };
 }
